@@ -1,0 +1,27 @@
+#安装Chocolatey
+choco install minikube
+choco install helm
+choco install kubectl
+
+#硬链接到到其他盘，防止c盘写满
+mklink /H /J %USERPROFILE%\.minikube D:\minikube
+
+#启动minikube
+minikube start --cpus=4 --image-mirror-country=cn --memory=8G --image-repository='registry.cn-hangzhou.aliyuncs.com/google_containers'
+# --hyperv-virtual-switch=out
+
+#安装TiDB集群
+helm repo add pingcap http://charts.pingcap.org
+kubectl create namespace tidb-admin
+kubectl create namespace tidb-cluster
+
+helm install --namespace tidb-admin tidb-operator pingcap/tidb-operator --version v1.1.7 --set operatorImage=registry.cn-beijing.aliyuncs.com/tidb/tidb-operator:v1.1.7 --set tidbBackupManagerImage=registry.cn-beijing.aliyuncs.com/tidb/tidb-backup-manager:v1.1.7 --set scheduler.kubeSchedulerImageName=registry.cn-hangzhou.aliyuncs.com/google_containers/kube-scheduler
+kubectl apply -f tidb-crd.yaml
+kubectl apply -f tidb-cluster.yaml
+kubectl apply -f tidb-monitor.yaml
+
+#导入测试数据（2kw）
+#$host = minikube ip
+#git clone https://github.com/datacharmer/test_db
+#cd test_db
+#mysql -u root -h $host --port 30002 < employees.sql
